@@ -1,1 +1,1 @@
-# as2_platform_dji_osdk
+# dji_matrice_platform
