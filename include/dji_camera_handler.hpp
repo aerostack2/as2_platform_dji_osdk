@@ -102,8 +102,8 @@ class DJIGimbalHandler {
 
   void gimbalCb(const as2_msgs::msg::GimbalControl::SharedPtr msg) {
     RCLCPP_INFO(node_ptr_->get_logger(), "Gimbal angle: %f %f %f",
-                msg->control.vector.x, msg->control.vector.y,
-                msg->control.vector.z);
+                msg->target.vector.x, msg->target.vector.y,
+                msg->target.vector.z);
     geometry_msgs::msg::QuaternionStamped gimbal_status;
     gimbal_status.header.stamp = node_ptr_->now();
     gimbal_status.header.frame_id = "base_link";
@@ -112,17 +112,17 @@ class DJIGimbalHandler {
     gimbal_status_pub_->publish(gimbal_status);
 
     DJI::OSDK::GimbalModule::Rotation gimbal_rotation;
-    if (msg->control.vector.x == gimbal_angle_.x &&
-        msg->control.vector.y == gimbal_angle_.y &&
-        msg->control.vector.z == gimbal_angle_.z) {
+    if (msg->target.vector.x == gimbal_angle_.x &&
+        msg->target.vector.y == gimbal_angle_.y &&
+        msg->target.vector.z == gimbal_angle_.z) {
       return;
     }
-    gimbal_rotation.roll = msg->control.vector.x - gimbal_angle_.x;
-    gimbal_rotation.pitch = msg->control.vector.y - gimbal_angle_.y;
-    gimbal_rotation.yaw = msg->control.vector.z - gimbal_angle_.z;
-    gimbal_angle_.x = msg->control.vector.x;
-    gimbal_angle_.y = msg->control.vector.y;
-    gimbal_angle_.z = msg->control.vector.z;
+    gimbal_rotation.roll = msg->target.vector.x - gimbal_angle_.x;
+    gimbal_rotation.pitch = msg->target.vector.y - gimbal_angle_.y;
+    gimbal_rotation.yaw = msg->target.vector.z - gimbal_angle_.z;
+    gimbal_angle_.x = msg->target.vector.x;
+    gimbal_angle_.y = msg->target.vector.y;
+    gimbal_angle_.z = msg->target.vector.z;
     gimbal_rotation.time = 0.5;
     gimbal_rotation.rotationMode = 0;
     ErrorCode::ErrorCodeType error = gimbal_manager_.rotateSync(
