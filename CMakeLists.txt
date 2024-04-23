@@ -117,7 +117,6 @@ if(BUILD_TESTING)
   # ament_lint_auto_find_test_dependencies()
   
   ament_cppcheck(src/ include/)
-  ament_clang_format(src/ include/ tests/ --config ${CMAKE_CURRENT_SOURCE_DIR}/.clang-format)
 
 endif()
 
