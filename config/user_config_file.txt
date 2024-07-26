@@ -1,5 +1,5 @@
-app_id: <your_app_id>
-app_key: <your_app_key>
-device: /dev/ttyUSB0
-baudrate: 921600
-acm_port: /dev/ttyACM0
+app_id : 123456
+app_key : 0123456789abcdefghijklmnopqrstuvwxyz
+device : /dev/ttyUSBx
+baudrate : 921600
+acm_port : /dev/ttyACMx

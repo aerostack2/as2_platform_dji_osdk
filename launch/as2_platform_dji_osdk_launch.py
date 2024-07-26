@@ -25,7 +25,6 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
 """Launch DJI OSDK platform node."""
 
 import os
@@ -35,16 +34,16 @@ from as2_core.declare_launch_arguments_from_config_file import DeclareLaunchArgu
 from as2_core.launch_configuration_from_config_file import LaunchConfigurationFromConfigFile
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration, EnvironmentVariable
+from launch.substitutions import EnvironmentVariable, LaunchConfiguration
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    """Entrypoint"""
+    """Entrypoint."""
     package_folder = get_package_share_directory('as2_platform_dji_osdk')
     control_modes = os.path.join(package_folder, 'config/control_modes.yaml')
     platform_config_file = os.path.join(package_folder,
-                               'config/platform_config_file.yaml')
+                                        'config/platform_config_file.yaml')
     user_config_file = os.path.join(package_folder, 'config/user_config_file.txt')
     mop_handler_config_file = os.path.join(package_folder, 'config/mop_handler_config_file.yaml')
 
@@ -76,7 +75,7 @@ def generate_launch_description():
                 {
                     'control_modes_file': LaunchConfiguration('control_modes_file'),
                 },
-               LaunchConfigurationFromConfigFile(
+                LaunchConfigurationFromConfigFile(
                     'platform_config_file',
                     default_file=platform_config_file),
                 LaunchConfigurationFromConfigFile(

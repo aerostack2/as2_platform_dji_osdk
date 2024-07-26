@@ -1,10 +1,50 @@
+// Copyright 2024 Universidad Politécnica de Madrid
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+//    * Redistributions of source code must retain the above copyright
+//      notice, this list of conditions and the following disclaimer.
+//
+//    * Redistributions in binary form must reproduce the above copyright
+//      notice, this list of conditions and the following disclaimer in the
+//      documentation and/or other materials provided with the distribution.
+//
+//    * Neither the name of the Universidad Politécnica de Madrid nor the names of its
+//      contributors may be used to endorse or promote products derived from
+//      this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+/**
+ * @file dji_mop_handler.cpp
+ *
+ * DJI MOP class implementation file.
+ *
+ * @authors Miguel Fernández Cortizas
+ *          Rafael Perez-Segui
+ *          Pedro Arias Pérez
+ */
+
 #include "dji_mop_handler.hpp"
 
-void DJIMopHandler::keepAliveCB(const std_msgs::msg::String::SharedPtr msg) {
+void DJIMopHandler::keepAliveCB(const std_msgs::msg::String::SharedPtr msg)
+{
   status_ = msg->data + MSG_DELIMITER;
 }
 
-void DJIMopHandler::downlinkCB(const std_msgs::msg::String::SharedPtr msg) {
+void DJIMopHandler::downlinkCB(const std_msgs::msg::String::SharedPtr msg)
+{
   if (!connected_) {
     return;
   }
@@ -14,7 +54,8 @@ void DJIMopHandler::downlinkCB(const std_msgs::msg::String::SharedPtr msg) {
   queue_mtx_.unlock();
 }
 
-bool DJIMopHandler::send() {
+bool DJIMopHandler::send()
+{
   DJI::OSDK::MOP::MopErrCode ret;
 
   // Always appending status to send
@@ -52,25 +93,27 @@ bool DJIMopHandler::send() {
   return false;
 }
 
-bool DJIMopHandler::getReady() {
-  recvBuf_ = (uint8_t *)OsdkOsal_Malloc(RELIABLE_RECV_ONCE_BUFFER_SIZE);
+bool DJIMopHandler::getReady()
+{
+  recvBuf_ = reinterpret_cast<uint8_t *>(OsdkOsal_Malloc(RELIABLE_RECV_ONCE_BUFFER_SIZE));
   if (recvBuf_ == NULL) {
     RCLCPP_ERROR(node_ptr_->get_logger(), "Osdk_malloc recvbuffer error");
     return false;
   }
-  readPack_ = {(uint8_t *)recvBuf_, RELIABLE_RECV_ONCE_BUFFER_SIZE};
+  readPack_ = {reinterpret_cast<uint8_t *>(recvBuf_), RELIABLE_RECV_ONCE_BUFFER_SIZE};
 
-  sendBuf_ = (uint8_t *)OsdkOsal_Malloc(RELIABLE_SEND_ONCE_BUFFER_SIZE);
+  sendBuf_ = reinterpret_cast<uint8_t *>(OsdkOsal_Malloc(RELIABLE_SEND_ONCE_BUFFER_SIZE));
   if (sendBuf_ == NULL) {
     RCLCPP_ERROR(node_ptr_->get_logger(), "Osdk_malloc sendbuffer error");
     return false;
   }
-  writePack_ = {(uint8_t *)sendBuf_, RELIABLE_SEND_ONCE_BUFFER_SIZE};
+  writePack_ = {reinterpret_cast<uint8_t *>(sendBuf_), RELIABLE_SEND_ONCE_BUFFER_SIZE};
 
   return true;
 }
 
-void DJIMopHandler::mopCommunicationFnc(int id) {
+void DJIMopHandler::mopCommunicationFnc(int id)
+{
   vehicle_ptr_->initMopServer();
 
   DJI::OSDK::MOP::PipelineID _id(id);
@@ -115,7 +158,8 @@ void DJIMopHandler::mopCommunicationFnc(int id) {
   RCLCPP_ERROR(node_ptr_->get_logger(), "Connection closed. Exiting..");
 }
 
-void DJIMopHandler::mopSendFnc(int id) {
+void DJIMopHandler::mopSendFnc(int id)
+{
   while (!connected_) {
     OsdkOsal_TaskSleepMs(mop_write_rate_);
   }
@@ -128,7 +172,8 @@ void DJIMopHandler::mopSendFnc(int id) {
   }
 }
 
-void DJIMopHandler::close() {
+void DJIMopHandler::close()
+{
   connected_ = false;
   closed_ = true;
 
@@ -143,7 +188,8 @@ void DJIMopHandler::close() {
   vehicle_ptr_->mopServer->~MopServer();
 }
 
-void DJIMopHandler::parseData(MopPipeline::DataPackType data) {
+void DJIMopHandler::parseData(MopPipeline::DataPackType data)
+{
   std::string data_str = bytesToString(readPack_.data, readPack_.length);
   if (missed_msg_ != "") {
     data_str.insert(0, missed_msg_);
@@ -153,7 +199,7 @@ void DJIMopHandler::parseData(MopPipeline::DataPackType data) {
   missed_msg_ = missed_msg;
 
   std_msgs::msg::String msg = std_msgs::msg::String();
-  for (const std::string &_msg : msg_list) {
+  for (const std::string & _msg : msg_list) {
     msg.data = _msg;
     // RCLCPP_INFO(node_ptr_->get_logger(), "UPLINK MSG: %s\n", _msg.c_str());
     uplink_pub_->publish(msg);
@@ -161,7 +207,8 @@ void DJIMopHandler::parseData(MopPipeline::DataPackType data) {
 }
 
 std::tuple<std::vector<std::string>, std::string> DJIMopHandler::checkString(
-    const std::string &input, char delimiter) {
+  const std::string & input, char delimiter)
+{
   std::vector<std::string> parts;
   std::stringstream ss(input);
   std::string part;
@@ -179,7 +226,8 @@ std::tuple<std::vector<std::string>, std::string> DJIMopHandler::checkString(
   return {parts, last_part};
 }
 
-std::string DJIMopHandler::bytesToString(const uint8_t *data, size_t len) {
+std::string DJIMopHandler::bytesToString(const uint8_t * data, size_t len)
+{
   std::string result(reinterpret_cast<const char *>(data), len);
   return result;
 }
