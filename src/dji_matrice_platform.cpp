@@ -1,17 +1,54 @@
-// "Copyright [year] <Copyright Owner>"
+// Copyright 2024 Universidad Politécnica de Madrid
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+//    * Redistributions of source code must retain the above copyright
+//      notice, this list of conditions and the following disclaimer.
+//
+//    * Redistributions in binary form must reproduce the above copyright
+//      notice, this list of conditions and the following disclaimer in the
+//      documentation and/or other materials provided with the distribution.
+//
+//    * Neither the name of the Universidad Politécnica de Madrid nor the names of its
+//      contributors may be used to endorse or promote products derived from
+//      this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 
-#include "dji_matrice_platform.hpp"
+/**
+ * @file dji_matrice_platform.cpp
+ *
+ * DJI Platform class implementation file.
+ *
+ * @authors Miguel Fernández Cortizas
+ *          Rafael Perez-Segui
+ *          Pedro Arias Pérez
+ */
+
+#include <cmath>
+#include "as2_platform_dji_osdk/dji_matrice_platform.hpp"
 
 #include <as2_core/utils/control_mode_utils.hpp>
-#include <cmath>
 #include <rclcpp/logging.hpp>
 
 #include "dji_flight_controller.hpp"
-#include "dji_subscriber.hpp"
+#include "as2_platform_dji_osdk/dji_subscriber.hpp"
 #include "dji_telemetry.hpp"
 
-DJIMatricePlatform::DJIMatricePlatform(int argc, char** argv)
-    : as2::AerialPlatform() {
+DJIMatricePlatform::DJIMatricePlatform(int argc, char ** argv, const rclcpp::NodeOptions & options)
+: as2::AerialPlatform(options)
+{
   declare_parameter<bool>("publish_camera", false);
   get_parameter<bool>("publish_camera", publish_camera_);
 
@@ -21,14 +58,15 @@ DJIMatricePlatform::DJIMatricePlatform(int argc, char** argv)
   declare_parameter<bool>("enable_mop_channel", false);
   get_parameter<bool>("enable_mop_channel", enable_mop_channel_);
 
-  // TODO: READ_PARAMS
+  // TODO(miferco97): READ_PARAMS
   linux_env_ptr_ =
-      std::make_shared<LinuxSetup>(argc, argv, enable_advanced_sensing_);
+    std::make_shared<LinuxSetup>(argc, argv, enable_advanced_sensing_);
   static auto timer_commands_ = this->create_timer(
-      std::chrono::milliseconds(30), [this]() { this->sendCommand(); });
+    std::chrono::milliseconds(30), [this]() {this->sendCommand();});
 }
 
-void DJIMatricePlatform::configureSensors() {
+void DJIMatricePlatform::configureSensors()
+{
   if (publish_camera_) {
     RCLCPP_INFO(get_logger(), "Main camera is enabled.");
     camera_handler_ = std::make_shared<DJICameraHandler>(vehicle_, this);
@@ -39,11 +77,11 @@ void DJIMatricePlatform::configureSensors() {
   camera_trigger_ = std::make_shared<DJICameraTrigger>(vehicle_, this);
 
   dji_subscriptions_.emplace_back(
-      std::make_shared<DJISubscriptionOdometry>(this, vehicle_));
+    std::make_shared<DJISubscriptionOdometry>(this, vehicle_));
   dji_subscriptions_.emplace_back(
-      std::make_shared<DJISubscriptionFlightStatus>(this, vehicle_));
+    std::make_shared<DJISubscriptionFlightStatus>(this, vehicle_));
   dji_subscriptions_.emplace_back(
-      std::make_shared<DJISubscriptionBattery>(this, vehicle_));
+    std::make_shared<DJISubscriptionBattery>(this, vehicle_));
   // dji_subscriptions_.emplace_back(
   //     std::make_shared<DJISubscriptionImu>(this, vehicle_));
   // FIXME: fix before using it on EKFs
@@ -51,16 +89,18 @@ void DJIMatricePlatform::configureSensors() {
   //     std::make_shared<DJISubscriptionCompass>(this, vehicle_));
   // dji_subscriptions_.emplace_back(
   //     std::make_shared<DJISubscriptionRTK>(this, vehicle_));
-};
+}
 
-void DJIMatricePlatform::printDJIError(ErrorCode::ErrorCodeType error) {
+void DJIMatricePlatform::printDJIError(ErrorCode::ErrorCodeType error)
+{
   // RCLCPP_WARN(this->get_logger(), "DJI ERROR Code Type : %ld", error);
   // auto error_msgs = ErrorCode::getErrorCode(ErrorCode::getModuleID(error),
   // ErrorCode::getFunctionID(error),ErrorCode::getRawRetCode(error));
   ErrorCode::printErrorCodeMsg(error);
 }
 
-bool DJIMatricePlatform::ownSetArmingState(bool state) {
+bool DJIMatricePlatform::ownSetArmingState(bool state)
+{
   ErrorCode::ErrorCodeType error;
   if (state) {
     return true;
@@ -76,13 +116,14 @@ bool DJIMatricePlatform::ownSetArmingState(bool state) {
     return false;
   }
   return true;
-};
+}
 
-bool DJIMatricePlatform::ownTakeoff() {
+bool DJIMatricePlatform::ownTakeoff()
+{
   RCLCPP_INFO(this->get_logger(), "Taking off");
   int timeout = 10;
   ErrorCode::ErrorCodeType error =
-      vehicle_->flightController->startTakeoffSync(timeout);
+    vehicle_->flightController->startTakeoffSync(timeout);
 
   // Wait timeout
   rclcpp::sleep_for(std::chrono::seconds(timeout));
@@ -95,13 +136,14 @@ bool DJIMatricePlatform::ownTakeoff() {
   }
   RCLCPP_INFO(this->get_logger(), "Takeoff Success");
   return true;
-};
+}
 
-bool DJIMatricePlatform::ownLand() {
+bool DJIMatricePlatform::ownLand()
+{
   RCLCPP_INFO(this->get_logger(), "Landing");
   control_flag_ = 0x00;
   ErrorCode::ErrorCodeType error =
-      vehicle_->flightController->startLandingSync(10);
+    vehicle_->flightController->startLandingSync(10);
   // For hard landing :
   // ErrorCode::ErrorCodeType error =
   // vehicle_->flightController->startForceLandingSync(10);
@@ -113,44 +155,47 @@ bool DJIMatricePlatform::ownLand() {
   }
   RCLCPP_INFO(this->get_logger(), "Landing Success");
   return true;
-};
+}
 
-bool DJIMatricePlatform::ownSetOffboardControl(bool offboard) {
+bool DJIMatricePlatform::ownSetOffboardControl(bool offboard)
+{
   auto _error =
-      this->vehicle_->flightController->obtainJoystickCtrlAuthoritySync(10);
+    this->vehicle_->flightController->obtainJoystickCtrlAuthoritySync(10);
   printDJIError(_error);
   return true;
   ErrorCode::ErrorCodeType error;
   if (offboard) {
     error =
-        this->vehicle_->flightController->obtainJoystickCtrlAuthoritySync(10);
+      this->vehicle_->flightController->obtainJoystickCtrlAuthoritySync(10);
     // ErrorCode::SUCCESS
   } else {
     RCLCPP_WARN(this->get_logger(), "Manual mode cannot be set from ");
   }
   if (error) {
     printDJIError(error);
-    RCLCPP_ERROR(this->get_logger(), "Failed to set offboard control: %d",
-                 offboard);
+    RCLCPP_ERROR(
+      this->get_logger(), "Failed to set offboard control: %d",
+      offboard);
     ErrorCode::getErrorCodeMsg(error);
     return false;
   }
   return true;
-};
+}
 
 bool DJIMatricePlatform::ownSetPlatformControlMode(
-    const as2_msgs::msg::ControlMode& msg) {
+  const as2_msgs::msg::ControlMode & msg)
+{
   DJI::OSDK::FlightController::JoystickMode prov_mode;
 
   if (msg.control_mode == as2_msgs::msg::ControlMode::HOVER) {
     prov_mode.horizontalLogic =
-        FlightController::HorizontalLogic::HORIZONTAL_VELOCITY;
+      FlightController::HorizontalLogic::HORIZONTAL_VELOCITY;
     prov_mode.verticalLogic =
-        FlightController::VerticalLogic::VERTICAL_VELOCITY;
+      FlightController::VerticalLogic::VERTICAL_VELOCITY;
     prov_mode.yawLogic = FlightController::YawLogic::YAW_RATE;
     prov_mode.stableMode = FlightController::StableMode::STABLE_ENABLE;
     prov_mode.horizontalCoordinate =
-        FlightController::HorizontalCoordinate::HORIZONTAL_GROUND;
+      FlightController::HorizontalCoordinate::HORIZONTAL_GROUND;
     dji_joystick_mode_ = prov_mode;
     return true;
   }
@@ -167,35 +212,35 @@ bool DJIMatricePlatform::ownSetPlatformControlMode(
 
   switch (msg.control_mode) {
     case as2_msgs::msg::ControlMode::POSITION: {
-      prov_mode.horizontalLogic =
+        prov_mode.horizontalLogic =
           FlightController::HorizontalLogic::HORIZONTAL_POSITION;
-      prov_mode.verticalLogic =
+        prov_mode.verticalLogic =
           FlightController::VerticalLogic::VERTICAL_POSITION;
-    } break;
+      } break;
     case as2_msgs::msg::ControlMode::SPEED: {
-      prov_mode.horizontalLogic =
+        prov_mode.horizontalLogic =
           FlightController::HorizontalLogic::HORIZONTAL_VELOCITY;
-      prov_mode.verticalLogic =
+        prov_mode.verticalLogic =
           FlightController::VerticalLogic::VERTICAL_VELOCITY;
-    } break;
+      } break;
     case as2_msgs::msg::ControlMode::SPEED_IN_A_PLANE: {
-      prov_mode.horizontalLogic =
+        prov_mode.horizontalLogic =
           FlightController::HorizontalLogic::HORIZONTAL_VELOCITY;
-      prov_mode.verticalLogic =
+        prov_mode.verticalLogic =
           FlightController::VerticalLogic::VERTICAL_POSITION;
-    } break;
+      } break;
     case as2_msgs::msg::ControlMode::ATTITUDE: {
-      prov_mode.horizontalLogic =
+        prov_mode.horizontalLogic =
           FlightController::HorizontalLogic::HORIZONTAL_ANGLE;
-      prov_mode.verticalLogic =
+        prov_mode.verticalLogic =
           FlightController::VerticalLogic::VERTICAL_THRUST;
-    } break;
+      } break;
     case as2_msgs::msg::ControlMode::ACRO: {
-      prov_mode.horizontalLogic =
+        prov_mode.horizontalLogic =
           FlightController::HorizontalLogic::HORIZONTAL_ANGULAR_RATE;
-      prov_mode.verticalLogic =
+        prov_mode.verticalLogic =
           FlightController::VerticalLogic::VERTICAL_THRUST;
-    } break;
+      } break;
     default:
       RCLCPP_ERROR(this->get_logger(), "Unknown control mode");
       return false;
@@ -205,13 +250,14 @@ bool DJIMatricePlatform::ownSetPlatformControlMode(
   prov_mode.stableMode = FlightController::StableMode::STABLE_ENABLE;
   // ADD HORIZONTAL_FRAME enabled
   prov_mode.horizontalCoordinate =
-      FlightController::HorizontalCoordinate::HORIZONTAL_GROUND;
+    FlightController::HorizontalCoordinate::HORIZONTAL_GROUND;
   dji_joystick_mode_ = prov_mode;
 
   return true;
-};
+}
 
-bool DJIMatricePlatform::ownSendCommand() {
+bool DJIMatricePlatform::ownSendCommand()
+{
   // if (control_flag_ == 0x00) {
   //   // RCLCPP_ERROR(this->get_logger(), "Control flag is not set");
   //   return false;
@@ -226,15 +272,16 @@ bool DJIMatricePlatform::ownSendCommand() {
   // ownSetOffboardControl(true);
   // vehicle_->initControl();
   if (platform_info_msg_.current_control_mode.control_mode ==
-      as2_msgs::msg::ControlMode::HOVER) {
+    as2_msgs::msg::ControlMode::HOVER)
+  {
     // send all zeros
     RCLCPP_INFO(this->get_logger(), " HOVERING");
     vehicle_->flightController->setJoystickMode(dji_joystick_mode_);
     FlightController::JoystickCommand joystick_cmd = {
-        (float)0,
-        (float)0,
-        (float)0,
-        (float)0,
+      static_cast<float>(0),
+      static_cast<float>(0),
+      static_cast<float>(0),
+      static_cast<float>(0),
     };
     vehicle_->flightController->setJoystickCommand(joystick_cmd);
     vehicle_->flightController->joystickAction();
@@ -249,8 +296,9 @@ bool DJIMatricePlatform::ownSendCommand() {
   //
   if (!this->has_new_references_) {
     // RCLCPP_ERROR(this->get_logger(), "No new references");
-    RCLCPP_DEBUG_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
-                          "No new references since mode change");
+    RCLCPP_DEBUG_THROTTLE(
+      this->get_logger(), *this->get_clock(), 1000,
+      "No new references since mode change");
     return true;
   }
 
@@ -258,17 +306,19 @@ bool DJIMatricePlatform::ownSendCommand() {
   x = y = z = yaw = 0.0;
 
   if (platform_info_msg_.current_control_mode.yaw_mode ==
-      as2_msgs::msg::ControlMode::YAW_ANGLE) {
+    as2_msgs::msg::ControlMode::YAW_ANGLE)
+  {
     tf2::Quaternion q(this->command_pose_msg_.pose.orientation.x,
-                      this->command_pose_msg_.pose.orientation.y,
-                      this->command_pose_msg_.pose.orientation.z,
-                      this->command_pose_msg_.pose.orientation.w);
+      this->command_pose_msg_.pose.orientation.y,
+      this->command_pose_msg_.pose.orientation.z,
+      this->command_pose_msg_.pose.orientation.w);
     tf2::Matrix3x3 m(q);
     double _, __, yaw_;
     m.getRPY(_, __, yaw);
     yaw = -yaw * 180.0 / M_PI;
-  } else if (platform_info_msg_.current_control_mode.yaw_mode ==
-             as2_msgs::msg::ControlMode::YAW_SPEED) {
+  } else if (platform_info_msg_.current_control_mode.yaw_mode == // NOLINT
+    as2_msgs::msg::ControlMode::YAW_SPEED)
+  {
     yaw = -this->command_twist_msg_.twist.angular.z * 180.0 / M_PI;
   } else {
     RCLCPP_ERROR(this->get_logger(), "Unknown yaw mode");
@@ -283,11 +333,11 @@ bool DJIMatricePlatform::ownSendCommand() {
     //   z = this->command_pose_msg_.pose.position.z;
     // } break;
     case as2_msgs::msg::ControlMode::SPEED: {
-      // Conversion from AS2 ENU frame into DJI NEU frame
-      x = this->command_twist_msg_.twist.linear.y;
-      y = this->command_twist_msg_.twist.linear.x;
-      z = this->command_twist_msg_.twist.linear.z;
-    } break;
+        // Conversion from AS2 ENU frame into DJI NEU frame
+        x = this->command_twist_msg_.twist.linear.y;
+        y = this->command_twist_msg_.twist.linear.x;
+        z = this->command_twist_msg_.twist.linear.z;
+      } break;
     // case as2_msgs::msg::ControlMode::SPEED_IN_A_PLANE: {
     //   x = this->command_twist_msg_.twist.linear.y;
     //   y = -this->command_twist_msg_.twist.linear.x;
@@ -340,23 +390,24 @@ bool DJIMatricePlatform::ownSendCommand() {
 
   vehicle_->flightController->setJoystickMode(dji_joystick_mode_);
   FlightController::JoystickCommand joystick_cmd = {
-      (float)x,
-      (float)y,
-      (float)z,
-      (float)yaw,
+    static_cast<float>(x),
+    static_cast<float>(y),
+    static_cast<float>(z),
+    static_cast<float>(yaw),
   };
   vehicle_->flightController->setJoystickCommand(joystick_cmd);
   vehicle_->flightController->joystickAction();
   return true;
 }
 
-int DJIMatricePlatform::djiInitVehicle() {
+int DJIMatricePlatform::djiInitVehicle()
+{
   vehicle_ = linux_env_ptr_->getVehicle();
   if (vehicle_ == NULL) {
     std::cout << "Vehicle not initialized, exiting.\n";
     return -1;
   }
   return 0;
-};
+}
 
 int DJISubscription::n_packages_ = -1;
