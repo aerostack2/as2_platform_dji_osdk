@@ -2,6 +2,14 @@
 Changelog for package as2_platform_dji_osdk
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [test] Migrate to ament_lint_auto
+* [feat] Update launcher with param utils
+* [fix] publising gimbal attitude at any cb hit
+* [refactor] repo extracted from main track
+* Contributors: Miguel Fernandez-Cortizas, Rafael Perez-Segui, pariaspe
+
 1.0.9 (2024-03-25)
 ------------------
 
