@@ -81,6 +81,13 @@
 #define RELIABLE_RECV_ONCE_BUFFER_SIZE (1024)
 #define RELIABLE_SEND_ONCE_BUFFER_SIZE (1024)
 
+/**
+ * @brief Request one broadcast telemetry packet from the vehicle.
+ *
+ * @param vehicle OSDK vehicle handle.
+ * @param responseTimeout Timeout, in seconds.
+ * @return true if the packet was received.
+ */
 bool getBroadcastData(DJI::OSDK::Vehicle * vehicle, int responseTimeout = 1);
 
 class DJIMatricePlatform : public as2::AerialPlatform
@@ -97,9 +104,19 @@ class DJIMatricePlatform : public as2::AerialPlatform
   bool publish_camera_ = false;
 
 public:
+  /**
+   * @brief Construct the DJI Matrice platform and initialize the OSDK vehicle.
+   *
+   * @param argc Argument count forwarded to the OSDK linux environment.
+   * @param argv Argument values forwarded to the OSDK linux environment.
+   * @param options Node options.
+   */
   DJIMatricePlatform(
     int argc, char ** argv,
     const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
+  /**
+   * @brief Destroy the DJI Matrice Platform object, stopping its subscriptions.
+   */
   ~DJIMatricePlatform()
   {
     for (auto & sub : dji_subscriptions_) {
@@ -115,22 +132,64 @@ public:
 
   std::vector<DJISubscription::SharedPtr> dji_subscriptions_;
 
+  /**
+   * @brief Create the sensor interfaces the platform publishes.
+   */
   void configureSensors() override;
   // void publishSensorData()override {};
 
+  /**
+   * @brief Arm or disarm the vehicle.
+   *
+   * @param state True to arm, false to disarm.
+   * @return true if the vehicle accepted the request.
+   */
   bool ownSetArmingState(bool state) override;
+  /**
+   * @brief Enter or leave offboard control.
+   *
+   * @param offboard True to take control, false to release it.
+   * @return true if the vehicle accepted the request.
+   */
   bool ownSetOffboardControl(bool offboard) override;
+  /**
+   * @brief Accept a control mode requested through the platform interface.
+   *
+   * @param msg Requested control mode.
+   * @return true if the platform accepts the mode.
+   */
   bool ownSetPlatformControlMode(
     const as2_msgs::msg::ControlMode & msg) override;
+  /**
+   * @brief Send the current actuator commands to the vehicle.
+   *
+   * @return true if the command was sent.
+   */
   bool ownSendCommand() override;
 
+  /**
+   * @brief Take off with the platform own takeoff routine.
+   *
+   * @return true if the takeoff finished successfully.
+   */
   bool ownTakeoff() override;
+  /**
+   * @brief Land with the platform own landing routine.
+   *
+   * @return true if the landing finished successfully.
+   */
   bool ownLand() override;
 
+  /**
+   * @brief Hold the vehicle in place with the OSDK emergency brake.
+   */
   void ownStopPlatform() override
   {
     vehicle_->flightController->emergencyBrakeAction();
   }
+  /**
+   * @brief Kill switch. A DJI cannot be killed from the SDK: use the remote.
+   */
   void ownKillSwitch() override
   {
     RCLCPP_ERROR(
@@ -140,16 +199,39 @@ public:
   }
 
 private:
+  /**
+   * @brief Log an OSDK error code with its human readable message.
+   *
+   * @param error OSDK error code.
+   */
   void printDJIError(ErrorCode::ErrorCodeType error);
+  /**
+   * @brief Initialize the OSDK vehicle and take control authority.
+   *
+   * @return 0 on success.
+   */
   int djiInitVehicle();
+  /**
+   * @brief Read the vehicle telemetry. Not implemented: the subscriptions push it.
+   */
   void djiReadTelemetry() {}
+  /**
+   * @brief Read the battery state. Not implemented: the subscriptions push it.
+   */
   void djiReadBattery() {}
+  /**
+   * @brief Start the OSDK telemetry subscriptions the platform publishes.
+   */
   void djiConfigureSensors()
   {
     vehicle_->djiBattery->subscribeBatteryWholeInfo(true);
   }
 
 public:
+  /**
+   * @brief Initialize the vehicle, configure the sensors and start the
+   * telemetry subscriptions.
+   */
   void start()
   {
     if (djiInitVehicle() < 0) {
@@ -173,6 +255,9 @@ public:
     // ownSetArmingState(true);
   }
 
+  /**
+   * @brief Run the OSDK sample flight sequence, for bring-up testing.
+   */
   void run_test()
   {
     if (djiInitVehicle() < 0) {
