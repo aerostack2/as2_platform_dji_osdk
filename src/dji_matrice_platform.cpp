@@ -49,14 +49,9 @@
 DJIMatricePlatform::DJIMatricePlatform(int argc, char ** argv, const rclcpp::NodeOptions & options)
 : as2::AerialPlatform(options)
 {
-  declare_parameter<bool>("publish_camera", false);
-  get_parameter<bool>("publish_camera", publish_camera_);
-
-  declare_parameter<bool>("enable_advanced_sensing", false);
-  get_parameter<bool>("enable_advanced_sensing", enable_advanced_sensing_);
-
-  declare_parameter<bool>("enable_mop_channel", false);
-  get_parameter<bool>("enable_mop_channel", enable_mop_channel_);
+  publish_camera_ = getParameter<bool>("publish_camera", false);
+  enable_advanced_sensing_ = getParameter<bool>("enable_advanced_sensing", false);
+  enable_mop_channel_ = getParameter<bool>("enable_mop_channel", false);
 
   // TODO(miferco97): READ_PARAMS
   linux_env_ptr_ =
