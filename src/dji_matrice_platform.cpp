@@ -182,6 +182,10 @@ bool DJIMatricePlatform::ownSetPlatformControlMode(
 {
   DJI::OSDK::FlightController::JoystickMode prov_mode;
 
+  // HORIZONTAL_GROUND is the local ENU frame of the vehicle
+  setCommandPoseFrameId(this->getOdomFrameId());
+  setCommandTwistFrameId(this->getOdomFrameId());
+
   if (msg.control_mode == as2_msgs::msg::ControlMode::HOVER) {
     prov_mode.horizontalLogic =
       FlightController::HorizontalLogic::HORIZONTAL_VELOCITY;
