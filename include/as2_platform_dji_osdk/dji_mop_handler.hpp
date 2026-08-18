@@ -72,21 +72,12 @@ public:
   DJIMopHandler(DJI::OSDK::Vehicle * vehicle, as2::Node * node)
   : vehicle_ptr_(vehicle), node_ptr_(node)
   {
-    node_ptr_->declare_parameter("channel_id", 49152);
-    mop_channel_id_ = node_ptr_->get_parameter("channel_id").as_int();
-
-    node_ptr_->declare_parameter("sending_retries", 3);
-    mop_sending_retries_ = node_ptr_->get_parameter("sending_retries").as_int();
-
-    node_ptr_->declare_parameter("read_rate", 10);
-    mop_read_rate_ = node_ptr_->get_parameter("read_rate").as_int();
-
-    node_ptr_->declare_parameter("write_rate", 500);
-    mop_write_rate_ = node_ptr_->get_parameter("write_rate").as_int();
-
-    node_ptr_->declare_parameter("reconnection_rate", 5000);
+    mop_channel_id_ = node_ptr_->getParameter<int>("channel_id");
+    mop_sending_retries_ = node_ptr_->getParameter<int>("sending_retries");
+    mop_read_rate_ = node_ptr_->getParameter<int>("read_rate");
+    mop_write_rate_ = node_ptr_->getParameter<int>("write_rate");
     mop_reconnection_rate_ =
-      node_ptr_->get_parameter("reconnection_rate").as_int();
+      node_ptr_->getParameter<int>("reconnection_rate");
 
     uplink_pub_ = node_ptr_->create_publisher<std_msgs::msg::String>(
       "/uplink", as2_names::topics::global::qos);
