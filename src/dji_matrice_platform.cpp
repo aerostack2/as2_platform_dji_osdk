@@ -182,6 +182,10 @@ bool DJIMatricePlatform::ownSetPlatformControlMode(
 {
   DJI::OSDK::FlightController::JoystickMode prov_mode;
 
+  // HORIZONTAL_GROUND is the local ENU frame of the vehicle
+  setCommandPoseFrameId(this->getOdomFrameId());
+  setCommandTwistFrameId(this->getOdomFrameId());
+
   if (msg.control_mode == as2_msgs::msg::ControlMode::HOVER) {
     prov_mode.horizontalLogic =
       FlightController::HorizontalLogic::HORIZONTAL_VELOCITY;
@@ -230,7 +234,7 @@ bool DJIMatricePlatform::ownSetPlatformControlMode(
         prov_mode.verticalLogic =
           FlightController::VerticalLogic::VERTICAL_THRUST;
       } break;
-    case as2_msgs::msg::ControlMode::ACRO: {
+    case as2_msgs::msg::ControlMode::BODY_RATES: {
         prov_mode.horizontalLogic =
           FlightController::HorizontalLogic::HORIZONTAL_ANGULAR_RATE;
         prov_mode.verticalLogic =
@@ -354,7 +358,7 @@ bool DJIMatricePlatform::ownSendCommand()
     //   yaw = yaw * 180.0 / M_PI;
     //   z = this->command_thrust_msg_.thrust;
     // } break;
-    // case as2_msgs::msg::ControlMode::ACRO: {
+    // case as2_msgs::msg::ControlMode::BODY_RATES: {
     //   // convert speeds from rad/s into deg/s
     //   x = this->command_twist_msg_.twist.angular.x;
     //   y = this->command_twist_msg_.twist.angular.y;
