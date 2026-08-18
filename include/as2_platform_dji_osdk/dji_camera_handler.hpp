@@ -111,7 +111,7 @@ public:
       msg->target.vector.z);
     geometry_msgs::msg::QuaternionStamped gimbal_status;
     gimbal_status.header.stamp = node_ptr_->now();
-    gimbal_status.header.frame_id = "base_link";
+    gimbal_status.header.frame_id = node_ptr_->getBaseFrameId();
     as2::frame::eulerToQuaternion(
       gimbal_angle_.x, gimbal_angle_.y,
       gimbal_angle_.z, gimbal_status.quaternion);

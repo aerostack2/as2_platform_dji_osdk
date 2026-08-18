@@ -460,9 +460,9 @@ protected:
       z);
     odom_msg_.header.stamp = node_->now();
     odom_msg_.header.frame_id =
-      as2::tf::generateTfName(node_->get_namespace(), "odom");
+      node_->getOdomFrameId();
     odom_msg_.child_frame_id =
-      as2::tf::generateTfName(node_->get_namespace(), "base_link");
+      node_->getBaseFrameId();
     // DJI pose frame is in NED coordinate system, so we need to convert to ENU
     odom_msg_.pose.pose.position.x = x;
     odom_msg_.pose.pose.position.y = y;
