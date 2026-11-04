@@ -57,7 +57,10 @@ fetchcontent_declare(
   GIT_REPOSITORY https://github.com/aerostack2/Onboard-SDK.git
   GIT_TAG master
 )
+# Onboard-SDK declares a CMake minimum below 3.5, which CMake 4 rejects.
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 fetchcontent_makeavailable(dji_onboardsdk)
+unset(CMAKE_POLICY_VERSION_MINIMUM)
 
 set(ONBOARDSDK_SOURCE ${dji_onboardsdk_SOURCE_DIR}/osdk-core)
 message(STATUS "ONBOARDSDK_SOURCE: ${ONBOARDSDK_SOURCE}")

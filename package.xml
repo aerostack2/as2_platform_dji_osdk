@@ -16,6 +16,8 @@
   <depend>ament_cmake</depend>
   <depend>ament_index_cpp</depend>
   <depend>libusb-1.0-dev</depend>
+  <depend>libopencv-dev</depend>
+  <depend>ffmpeg</depend>
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
   <depend>std_srvs </depend>
